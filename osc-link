@@ -1,0 +1,35 @@
+#!/bin/bash
+# Link the package
+
+if [ $# -lt 2 ]; then
+    >&2 echo "Usage: $(basename $0) <path:to/package> <path:to:destination>"
+    exit 1;
+fi
+
+OSC="osc"
+if [ "$(basename ${0%%-*})" == "iosc" ]; then
+    OSC="$OSC -A https://api.suse.de"
+fi
+
+SRC_PROJECT="${1%%/*}"
+DEST_PROJECT=$(basename $2)
+PROJECT=$(echo $(echo $1 | sed 's:/*$::') | sed 's/.*\///')
+
+if [ ! -d "$SRC_PROJECT/$PROJECT" ]; then
+    >&2 echo "No such source project or a package. Checkout it first?"
+    exit 1;
+fi
+
+if [ "$DEST_PROJECT" == "$SRC_PROJECT" ]; then
+    >&2 echo "Project cannot link onto itself."
+    exit 1;
+fi
+
+if [ ! -d "$DEST_PROJECT" ]; then
+    >&2 echo "No such destination project. Checkout it first?"
+    exit 1;
+fi
+
+echo "Linking \"$SRC_PROJECT/$PROJECT\" to \"$DEST_PROJECT\""
+$OSC $INTERNAL branch $SRC_PROJECT $PROJECT $DEST_PROJECT
+echo "Done"
