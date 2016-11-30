@@ -1,13 +1,39 @@
 #!/usr/bin/env bash
 
+function get_zombies() {
+    echo $(docker ps -aq)
+}
+
 function get_images() {
     echo $(docker images -q)
 }
 
-IMAGES=$(get_images)
-if [ ! -z $IMAGES ]; then
-    docker rmi --force $IMAGES
-else
-    echo "All shit is flushed"
+if [[ $# -eq 0 ]]; then
+    echo "Usage: $(basename $0) <mode>"
+    echo "Modes:"
+    echo -e "  -a\tThrow away everything."
+    echo -e "  -i\tImages only"
+    echo -e "  -z\tZombies only (Walking Dead TM docker processes)\n"
+    exit 1;
 fi
+
+if [[ $1 == '-a' || $1 == '-i' ]]; then
+    IMAGES=$(get_images)
+    if [[ ! -z $IMAGES ]]; then
+	docker rmi --force $IMAGES;
+	IMAGES="";
+	echo "Images flew away";
+    fi
+fi
+
+if [[ $1 == '-a' || $1 == '-z' ]]; then
+    ZOMBIES=$(get_zombies)
+    if [[ ! -z $ZOMBIES ]]; then
+	docker rm --force $ZOMBIES;
+	ZOMBIES="";
+	echo "Zombies flew away";
+    fi
+fi
+
+echo "All shit has been flushed"
 
