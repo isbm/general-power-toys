@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <branch-name>"
+    exit 1;
+fi
+
+for branch in $@; do
+    echo "*** Deleting branch $branch...: $branch"
+    if [ ! -z "$(git branch -d $branch 2>&1)" ]; then
+        echo "*** Force-removing not fully merged branch!"
+        git branch -D $branch 2>&1>/dev/null
+    fi
+    git push origin :$branch 2>&1>/dev/null
+done
