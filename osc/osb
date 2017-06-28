@@ -1,0 +1,8 @@
+#!/bin/bash
+
+PLATFORM=$1
+if [ -z $PLATFORM ]; then
+    PLATFORM="UNKNOWN"
+fi
+
+osc build --no-verify $PLATFORM
