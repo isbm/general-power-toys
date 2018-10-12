@@ -1,4 +1,13 @@
 #!/bin/bash
+#
+# Roll Salt package from the Git. The package will be fetched to the current place.
+# Example:
+#
+#    osc-roll-package foo:bar:blah/pkgname
+#
+# Important:
+#    Should be URL-style: location/name
+#
 
 if [[ $# -eq 0 ]]; then
     echo 'Package?'
