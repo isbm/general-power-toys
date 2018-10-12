@@ -1,0 +1,63 @@
+#!/bin/bash
+
+if [[ $# -eq 0 ]]; then
+    echo 'Package?'
+    exit 1;
+fi
+
+#
+# Get the package directory name with the home attached.
+#
+function get_full_package_name() {
+    echo "$(ls -l | grep $(echo $1 | cut -f1 -d '/') | awk '{print $NF}')"
+}
+
+#
+# Cleanup disabled run (remove package)
+#
+function cleanup_disabled_run() {
+    pkgtar=$(osc status | grep package | grep '?' | awk '{print $NF}')
+    echo "Removing $pkgtar tarfile"
+    rm "$pkgtar"
+}
+
+#
+# Add patches
+#
+function add_patches() {
+    for fn in $(osc status | grep '^[?]' | awk '{print $NF}'); do
+	osc add "$fn"
+    done
+}
+
+#
+# Create submit request to the OBS
+#
+function create_submit_request() {
+    res="$(osc sr -m '.')"
+    while [ $? -ne 0 ]; do
+	  sleep 5;
+	  echo "OBS error, trying again!"
+	  res="$(osc sr -m '.')"
+    done
+    echo $res;
+}
+
+
+PKG=$1
+echo "Checking out '$PKG'"
+osc bco $PKG
+
+cd $(get_full_package_name $PKG);
+cd $(echo $PKG | cut -d '/' -f2-);
+
+echo "Running the service..."
+osc service disabledrun
+echo "Cleaing up..."
+cleanup_disabled_run;
+echo "Finding new content..."
+add_patches;
+echo "Commit..."
+osc commit -m '.'
+echo "Creating submit request..."
+create_submit_request;
