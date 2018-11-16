@@ -25,7 +25,7 @@ function get_full_package_name() {
 # Cleanup disabled run (remove package)
 #
 function cleanup_disabled_run() {
-    pkgtar=$(osc status | grep package | grep '?' | awk '{print $NF}')
+    pkgtar=$(osc status | grep -P 'package-\d.*\.tar' | awk '{print $NF}')
     echo "Removing $pkgtar tarfile"
     rm "$pkgtar"
 }
