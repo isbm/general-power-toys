@@ -66,6 +66,7 @@ echo "Cleaing up..."
 cleanup_disabled_run;
 echo "Finding new content..."
 add_patches;
+$EDITOR $(basename $PKG).changes
 echo "Commit..."
 osc commit -m '.'
 echo "Creating submit request..."
