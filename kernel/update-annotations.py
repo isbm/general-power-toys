@@ -1,27 +1,40 @@
 #!/usr/bin/python3
 from __future__ import annotations
 import argparse
-import json
+import sys
 
 
 class Policy:
     def __init__(self, p:str):
         if len(p) != len(p.replace("\t", "")):
-            print("!!! TABS IN THE ANNOTATION: " + p)
+            print("!!! TABS NOT ALLOWED:")
+            print(p)
+            sys.exit(1)
+
         p = p.replace("\t", " " * 8) # They usually think TAB is 8 spaces, but can be 7...
         self._space:int = len([x for x in p.split("policy<{")[0].split(" ") if not x])
 
-        pp:list[str] = [x.strip() for x in p.split(" ", 1) if x]
+        pp:list[str] = [x.strip() for x in p.split("policy<{") if x]
         assert len(pp) == 2, "Policy cannot be parsed: {}".format(p)
 
         self._cfg:str = pp[0]
-        self._p:dict[str, str] = json.loads(pp[1].split("<", 1)[-1].split(">")[0].replace("'", '"'))
+        try:
+            self._p:dict[str, str] = dict([[t.strip().replace("'", '') for t in kv.split(":")]
+                                           for kv in pp[1].split("<{", 1)[-1].split("}>")[0].split(", ")])
+        except:
+            print("!!! BROKEN SYNTAX:")
+            print(p)
+            sys.exit(1)
 
-    def set(self, arch:str, val:str) -> Policy:
-        if self._p.get(arch) is not None:
-            self._p[arch] = val
+    def set(self, r_arch:str, val:str) -> Policy:
+        if r_arch.endswith("+"):
+            r_arch = r_arch.replace("+", "")
+            for arch in [x for x in self._p.keys() if x.startswith(r_arch)]:
+                self._p[arch] = val
+        elif self._p.get(r_arch) is not None:
+            self._p[r_arch] = val
         else:
-            print("Skipping: {}".format(self._p))
+            print("Skipping policy for arch \"{}\" at: {}".format(r_arch, self._p))
 
         return self
 
@@ -47,6 +60,13 @@ class Annotations:
                 out.append(d)
         self.data = out[:]
 
+    def list_arch(self):
+        arches = set()
+        for d in self.data:
+            if "policy<{" in d:
+                arches.update(Policy(d)._p.keys())
+        return sorted(list(arches))
+
     def __str__(self):
         return "\n".join(self.data)
 
@@ -68,17 +88,23 @@ class CCErrors:
 
 if __name__ == "__main__":
     pa = argparse.ArgumentParser(prog="Annotations updater")
-    pa.add_argument("-a", choices=["amd64", "arm64", "arm64-nxp-s32", "arm64-lowlatency"], help="Target architecture")
-    pa.add_argument("-n", help="Path to the kconfig annotations")
+    pa.add_argument("-l", help="List all architectures from the annotation", action="store_true")
+    pa.add_argument("-a", help="Target architecture")
+    pa.add_argument("-n", help="Path to the kconfig annotations (required)")
     pa.add_argument("-e", help="Path to config-check errors list")
     pa.add_argument("-o", help="Output file")
 
     args = pa.parse_args()
 
-    if len([x for x in [args.n, args.a, args.e, args.o] if x]) != 4:
+    if len([x for x in [args.n, args.e or args.l, args.o or args.l] if x]) != 3:
         print("Try --help, perhaps?")
+        sys.exit(1)
+
+    a = Annotations(p=args.n)
+    if args.l:
+        print("All architectures:\n\n ", "\n  ".join(a.list_arch()), "\n")
+        print("You can also use '+' at the end to match the rest, like 'arm+'\n")
     else:
-        a = Annotations(p=args.n)
         for cfg, v in CCErrors(args.e):
             a.set(cfg, args.a, v)
 
