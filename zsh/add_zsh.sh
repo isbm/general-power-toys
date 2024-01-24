@@ -1,6 +1,7 @@
 #!/usr/bin/sh
 
-sudo apt install zsh curl git -y
+sudo apt update
+sudo apt install zsh curl git emacs-nox -y
 sudo chsh $(whoami) -s /usr/bin/zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
